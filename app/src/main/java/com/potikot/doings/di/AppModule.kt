@@ -9,6 +9,7 @@ import com.potikot.doings.data.data_source.repository.ColumnRepositoryImpl
 import com.potikot.doings.data.data_source.repository.ProjectRepositoryImpl
 import com.potikot.doings.data.data_source.repository.TagRepositoryImpl
 import com.potikot.doings.data.data_source.repository.TaskRepositoryImpl
+import com.potikot.doings.domain.remote.yougile.YougileApi
 import com.potikot.doings.domain.repository.AccountRepository
 import com.potikot.doings.domain.repository.AppDataRepository
 import com.potikot.doings.domain.repository.BoardRepository
@@ -33,6 +34,7 @@ import com.potikot.doings.domain.use_case.GetAccountsUseCase
 import com.potikot.doings.domain.use_case.GetBoardUseCase
 import com.potikot.doings.domain.use_case.GetBoardsUseCase
 import com.potikot.doings.domain.use_case.GetColumnsUseCase
+import com.potikot.doings.domain.use_case.GetExternalAccountUseCase
 import com.potikot.doings.domain.use_case.GetProjectUseCase
 import com.potikot.doings.domain.use_case.GetProjectsUseCase
 import com.potikot.doings.domain.use_case.GetTagsUseCase
@@ -49,6 +51,14 @@ import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
+import io.ktor.client.HttpClient
+import io.ktor.client.engine.cio.CIO
+import io.ktor.client.plugins.contentnegotiation.ContentNegotiation
+import io.ktor.serialization.kotlinx.json.json
+import kotlinx.serialization.ExperimentalSerializationApi
+import kotlinx.serialization.json.ClassDiscriminatorMode
+import kotlinx.serialization.json.Json
+import javax.inject.Named
 import javax.inject.Singleton
 
 @Module
@@ -114,8 +124,10 @@ object AppModule {
         projectRepository: ProjectRepository
     ): MainUseCases {
         return MainUseCases(
+            addOrUpdateAccount = AddOrUpdateAccountUseCase(accountRepository),
             getAccount = GetAccountUseCase(accountRepository),
             getAccounts = GetAccountsUseCase(accountRepository),
+            getExternalAccount = GetExternalAccountUseCase(accountRepository),
 
             addOrUpdateProject = AddOrUpdateProjectUseCase(projectRepository),
             deleteProject = DeleteProjectUseCase(projectRepository),
@@ -166,5 +178,28 @@ object AppModule {
             deleteTag = DeleteTagUseCase(tagRepository),
             getTags = GetTagsUseCase(tagRepository),
         )
+    }
+
+    // todo: mb switch from singleton to avoid concurrent requests
+    @OptIn(ExperimentalSerializationApi::class)
+    @Provides
+    @Singleton
+    @Named("yougile")
+    fun provideYougileHttpClient(): HttpClient {
+        return HttpClient(CIO) {
+            install(ContentNegotiation) {
+                json(Json {
+                    ignoreUnknownKeys = true
+                    prettyPrint = true
+                    classDiscriminatorMode = ClassDiscriminatorMode.NONE
+                })
+            }
+        }
+    }
+
+    @Provides
+    @Singleton
+    fun provideYougileApi(@Named("yougile") client: HttpClient): YougileApi {
+        return YougileApi(client)
     }
 }

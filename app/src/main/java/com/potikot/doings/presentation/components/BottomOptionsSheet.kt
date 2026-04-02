@@ -12,6 +12,8 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.vectorResource
 import com.potikot.doings.presentation.util.OptionItem
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -36,6 +38,11 @@ fun BottomOptionsSheet(
                         if (option.icon != null) {
                             Icon(
                                 imageVector = option.icon,
+                                contentDescription = null
+                            )
+                        } else if (option.iconId != null) {
+                            Icon(
+                                imageVector = ImageVector.vectorResource(option.iconId),
                                 contentDescription = null
                             )
                         }

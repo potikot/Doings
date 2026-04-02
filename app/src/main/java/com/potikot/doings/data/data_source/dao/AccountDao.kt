@@ -34,6 +34,10 @@ interface AccountDao {
     fun getById(id: Long): Flow<AccountWithProjects?>
 
     @Transaction
+    @Query("SELECT * FROM accounts WHERE external_id = :id")
+    fun getByExternalId(id: String): Flow<List<AccountWithProjects>>
+
+    @Transaction
     @Query("SELECT * FROM accounts")
     fun getAll(): Flow<List<AccountWithProjects>>
 

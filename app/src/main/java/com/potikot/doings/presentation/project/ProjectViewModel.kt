@@ -1,7 +1,5 @@
 package com.potikot.doings.presentation.project
 
-import android.app.Application
-import android.util.Log
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
@@ -18,14 +16,17 @@ import com.potikot.doings.domain.model.Board
 import com.potikot.doings.domain.model.BoardId
 import com.potikot.doings.domain.model.Column
 import com.potikot.doings.domain.model.ColumnId
+import com.potikot.doings.domain.model.CommonTagData
 import com.potikot.doings.domain.model.ID
 import com.potikot.doings.domain.model.Project
 import com.potikot.doings.domain.model.ProjectId
+import com.potikot.doings.domain.model.Tag
 import com.potikot.doings.domain.model.TagId
 import com.potikot.doings.domain.model.Task
 import com.potikot.doings.domain.model.TaskId
 import com.potikot.doings.domain.repository.AppDataRepository
 import com.potikot.doings.domain.use_case.ProjectUseCases
+import com.potikot.doings.domain.util.PriorityLevel
 import com.potikot.doings.presentation.util.OptionItem
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.delay
@@ -34,7 +35,26 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import java.time.Instant
+import java.time.LocalDateTime
+import java.time.ZoneId
 import javax.inject.Inject
+
+enum class TagDialogMode {
+    CREATE,
+    EDIT
+}
+
+data class TagDialogState(
+    val mode: TagDialogMode? = null,
+    val type: TagDialogType? = null,
+    val taskId: TaskId? = null,
+    val editingTag: Tag? = null,
+    val customValue: String = "",
+    val priorityValue: PriorityLevel = PriorityLevel.NONE,
+    val deadlineStartDateMillis: Long? = null,
+    val deadlineEndDateMillis: Long? = null,
+)
 
 data class ProjectViewState(
     val isLoading: Boolean = false,
@@ -45,6 +65,7 @@ data class ProjectViewState(
     val boardToRename: Board? = null,
     val columnToRename: Column? = null,
     val taskToRename: Task? = null,
+    val tagDialog: TagDialogState = TagDialogState(),
     val taskToMove: TaskId? = null,
 )
 
@@ -62,6 +83,9 @@ class ProjectViewModel @Inject constructor(
 
     private val _taskMoveOptions = MutableStateFlow<List<OptionItem>?>(null)
     val taskMoveOptions: StateFlow<List<OptionItem>?> = _taskMoveOptions
+
+    private val _tagOptions = MutableStateFlow<List<OptionItem>?>(null)
+    val tagOptions: StateFlow<List<OptionItem>?> = _tagOptions
 
     private val _shouldDismissTMO = MutableStateFlow(false)
     val shouldDismissTMO: StateFlow<Boolean> = _shouldDismissTMO.asStateFlow()
@@ -95,12 +119,23 @@ class ProjectViewModel @Inject constructor(
             is ProjectEvent.DeleteTask -> deleteTask(event.id)
             is ProjectEvent.ToggleTaskCompleted -> toggleTaskCompleted(event.id, event.isCompleted)
             is ProjectEvent.MoveTask -> moveTask(event.id, event.targetColumnId)
+            is ProjectEvent.OpenTagDialog -> openTagDialog(event.taskId, event.tag)
+            is ProjectEvent.OpenCreateTagDialog -> openCreateTagDialog(event.taskId, event.tagType)
+            is ProjectEvent.UpdateTagCustomValue -> updateTagCustomValue(event.value)
+            is ProjectEvent.UpdateTagPriorityValue -> updateTagPriorityValue(event.level)
+            is ProjectEvent.UpdateTagDeadlineStart -> updateTagDeadlineStart(event.selectedDateMillis)
+            is ProjectEvent.UpdateTagDeadlineEnd -> updateTagDeadlineEnd(event.selectedDateMillis)
+            is ProjectEvent.SaveTagDialog -> saveTagDialog()
+            is ProjectEvent.CancelTagDialog -> cancelTagDialog()
+            is ProjectEvent.DeleteTagDialog -> deleteTagDialog()
 
             is ProjectEvent.DismissOptions -> {
                 if (event.id == 0) {
                     _options.value = null
-                } else {
+                } else if (event.id == 1) {
                     _taskMoveOptions.value = null
+                } else {
+                    _tagOptions.value = null
                 }
             } // todo: rework
         }
@@ -291,6 +326,11 @@ class ProjectViewModel @Inject constructor(
                 }
             ),
             OptionItem(
+                title = "Добавить тег",
+                iconId = R.drawable.tag_24,
+                action = { sendEvent(ProjectEvent.OpenTagDialog(id)) }
+            ),
+            OptionItem(
                 title = "Удалить",
                 icon = Icons.Filled.Delete,
                 action = { sendEvent(ProjectEvent.DeleteTask(id)) }
@@ -413,6 +453,185 @@ class ProjectViewModel @Inject constructor(
     private fun moveTask(id: TaskId, targetColumnId: ColumnId) {
         viewModelScope.launch {
             useCases.moveTask(id, targetColumnId)
+        }
+    }
+
+    private fun openTagDialog(taskId: TaskId, tag: Tag?) {
+        tag?.let {
+            _tagOptions.value = null
+            openEditTagDialog(taskId, it)
+            return
+        }
+
+        cancelTagDialog()
+        _tagOptions.value = createTagTypeOptions(taskId)
+    }
+
+    private fun createTagTypeOptions(taskId: TaskId): List<OptionItem> {
+        return listOf(
+            OptionItem(
+                title = "Текстовый",
+                action = { sendEvent(ProjectEvent.OpenCreateTagDialog(taskId, TagDialogType.CUSTOM)) }
+            ),
+            OptionItem(
+                title = "Приоритет",
+                action = { sendEvent(ProjectEvent.OpenCreateTagDialog(taskId, TagDialogType.PRIORITY)) }
+            ),
+            OptionItem(
+                title = "Дедлайн",
+                action = { sendEvent(ProjectEvent.OpenCreateTagDialog(taskId, TagDialogType.DEADLINE)) }
+            )
+        )
+    }
+
+    private fun openCreateTagDialog(taskId: TaskId, tagType: TagDialogType) {
+        _tagOptions.value = null
+        _state.update {
+            it.copy(
+                tagDialog = TagDialogState(
+                    mode = TagDialogMode.CREATE,
+                    type = tagType,
+                    taskId = taskId
+                )
+            )
+        }
+    }
+
+    private fun openEditTagDialog(taskId: TaskId, tag: Tag) {
+        _state.update {
+            it.copy(
+                tagDialog = TagDialogState(
+                    mode = TagDialogMode.EDIT,
+                    type = tag.toDialogType(),
+                    taskId = taskId,
+                    editingTag = tag,
+                    customValue = (tag as? Tag.Custom)?.value.orEmpty(),
+                    priorityValue = (tag as? Tag.Priority)?.level ?: PriorityLevel.NONE,
+                    deadlineStartDateMillis = (tag as? Tag.Deadline)?.start.toEpochMillisOrNull(),
+                    deadlineEndDateMillis = (tag as? Tag.Deadline)?.end.toEpochMillisOrNull()
+                )
+            )
+        }
+    }
+
+    private fun updateTagCustomValue(value: String) {
+        _state.update {
+            it.copy(tagDialog = it.tagDialog.copy(customValue = value))
+        }
+    }
+
+    private fun updateTagPriorityValue(level: PriorityLevel) {
+        _state.update {
+            it.copy(tagDialog = it.tagDialog.copy(priorityValue = level))
+        }
+    }
+
+    private fun updateTagDeadlineStart(selectedDateMillis: Long?) {
+        _state.update {
+            it.copy(tagDialog = it.tagDialog.copy(deadlineStartDateMillis = selectedDateMillis))
+        }
+    }
+
+    private fun updateTagDeadlineEnd(selectedDateMillis: Long?) {
+        _state.update {
+            it.copy(tagDialog = it.tagDialog.copy(deadlineEndDateMillis = selectedDateMillis))
+        }
+    }
+
+    private fun saveTagDialog() {
+        val dialog = _state.value.tagDialog
+        val taskId = dialog.taskId ?: return
+        val type = dialog.type ?: return
+        val existingTag = dialog.editingTag
+
+        viewModelScope.launch {
+            when (type) {
+                TagDialogType.CUSTOM -> {
+                    val value = dialog.customValue.trim()
+                    if (value.isBlank()) return@launch
+
+                    val tag = when (existingTag) {
+                        is Tag.Custom -> existingTag.copy(value = value)
+                        else -> Tag.Custom(
+                            common = CommonTagData(position = getNextTagPosition(taskId)),
+                            value = value
+                        )
+                    }
+                    useCases.addOrUpdateTag(taskId, tag)
+                }
+                TagDialogType.PRIORITY -> {
+                    val tag = when (existingTag) {
+                        is Tag.Priority -> existingTag.copy(level = dialog.priorityValue)
+                        else -> Tag.Priority(
+                            common = CommonTagData(position = getNextTagPosition(taskId)),
+                            level = dialog.priorityValue
+                        )
+                    }
+                    useCases.addOrUpdateTag(taskId, tag)
+                }
+                TagDialogType.DEADLINE -> {
+                    val start = dialog.deadlineStartDateMillis.toLocalDateTimeOrNull()
+                    val end = dialog.deadlineEndDateMillis.toLocalDateTimeOrNull()
+                    val tag = when (existingTag) {
+                        is Tag.Deadline -> existingTag.copy(start = start, end = end)
+                        else -> Tag.Deadline(
+                            common = CommonTagData(position = getNextTagPosition(taskId)),
+                            start = start,
+                            end = end
+                        )
+                    }
+                    useCases.addOrUpdateTag(taskId, tag)
+                }
+            }
+            cancelTagDialog()
+        }
+    }
+
+    private fun cancelTagDialog() {
+        _state.update {
+            it.copy(tagDialog = TagDialogState())
+        }
+    }
+
+    private fun deleteTagDialog() {
+        val tag = _state.value.tagDialog.editingTag ?: return
+        viewModelScope.launch {
+            useCases.deleteTag(tag)
+            cancelTagDialog()
+        }
+    }
+
+    private fun getNextTagPosition(taskId: TaskId): Int {
+        return getTaskFromState(taskId)?.tags?.size ?: 0
+    }
+
+    private fun getTaskFromState(taskId: TaskId): Task? {
+        return _state.value.project
+            ?.boards
+            ?.asSequence()
+            ?.flatMap { it.columns.asSequence() }
+            ?.flatMap { it.tasks.asSequence() }
+            ?.firstOrNull { it.id == taskId }
+    }
+
+    private fun Tag.toDialogType(): TagDialogType {
+        return when (this) {
+            is Tag.Custom -> TagDialogType.CUSTOM
+            is Tag.Priority -> TagDialogType.PRIORITY
+            is Tag.Deadline -> TagDialogType.DEADLINE
+        }
+    }
+
+    private fun LocalDateTime?.toEpochMillisOrNull(): Long? {
+        return this
+            ?.atZone(ZoneId.systemDefault())
+            ?.toInstant()
+            ?.toEpochMilli()
+    }
+
+    private fun Long?.toLocalDateTimeOrNull(): LocalDateTime? {
+        return this?.let {
+            LocalDateTime.ofInstant(Instant.ofEpochMilli(it), ZoneId.systemDefault())
         }
     }
 

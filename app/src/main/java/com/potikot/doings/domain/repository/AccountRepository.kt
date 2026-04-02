@@ -12,6 +12,7 @@ interface AccountRepository {
     suspend fun update(account: Account, withChildren: Boolean = true)
 
     fun get(id: AccountId): Flow<Account?>
+    fun getByExternalId(id: String): Flow<Account?>
     fun getAll(): Flow<List<Account>>
 
     fun count(): Int

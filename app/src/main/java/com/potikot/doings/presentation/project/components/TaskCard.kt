@@ -40,7 +40,8 @@ fun TaskCard(
     task: Task,
     modifier: Modifier = Modifier,
     onToggleCompleted: (Boolean) -> Unit,
-    onOpenOptions: () -> Unit
+    onOpenOptions: () -> Unit,
+    onTagClick: (Tag) -> Unit
 ) {
     Card(
         colors = CardDefaults.cardColors(
@@ -104,7 +105,7 @@ fun TaskCard(
                             tag = task.tags[index],
                             modifier = Modifier
                                 .padding(start = if (index > 0) 8.dp else 0.dp),
-                            onClick = { }
+                            onClick = { onTagClick(task.tags[index]) }
                         )
                     }
                 }
@@ -136,7 +137,8 @@ fun TaskCardPreview() {
             ),
             modifier = Modifier,
             onToggleCompleted = { },
-            onOpenOptions = { }
+            onOpenOptions = { },
+            onTagClick = { }
         )
     }
 }

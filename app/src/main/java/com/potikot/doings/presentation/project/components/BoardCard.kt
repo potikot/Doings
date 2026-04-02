@@ -30,6 +30,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.potikot.doings.domain.model.Board
 import com.potikot.doings.domain.model.ColumnId
+import com.potikot.doings.domain.model.Tag
 import com.potikot.doings.domain.model.TaskId
 import com.potikot.doings.presentation.util.generateMockBoard
 import com.potikot.doings.ui.theme.DoingsTheme
@@ -46,7 +47,8 @@ fun BoardCard(
     onOpenOptions_Column: (ColumnId) -> Unit,
     onDelete_Column: (ColumnId) -> Unit,
     onToggleDone_Task: (TaskId, Boolean) -> Unit,
-    onOpenOptions_Task: (TaskId) -> Unit
+    onOpenOptions_Task: (TaskId) -> Unit,
+    onTagClick_Task: (TaskId, Tag) -> Unit
 ) {
     val initialPage = board.columns.indexOfFirst { it.id == board.selectedColumnId }.coerceAtLeast(0)
     val pagerState = rememberPagerState(
@@ -92,7 +94,8 @@ fun BoardCard(
                         onOpenOptions = onOpenOptions_Column,
                         onDelete = onDelete_Column,
                         onToggleDone_Task = onToggleDone_Task,
-                        onOpenOptions_Task = onOpenOptions_Task
+                        onOpenOptions_Task = onOpenOptions_Task,
+                        onTagClick_Task = onTagClick_Task
                     )
                 }
             } else {
@@ -162,7 +165,8 @@ fun BoardCardPreview() {
             onOpenOptions_Column = { },
             onDelete_Column = { },
             onToggleDone_Task = { _, _ -> },
-            onOpenOptions_Task = { }
+            onOpenOptions_Task = { },
+            onTagClick_Task = { _, _ -> }
         )
     }
 }

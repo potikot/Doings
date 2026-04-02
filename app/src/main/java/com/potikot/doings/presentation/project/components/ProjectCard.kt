@@ -40,6 +40,7 @@ import com.potikot.doings.domain.model.BoardId
 import com.potikot.doings.domain.model.ColumnId
 import com.potikot.doings.domain.model.ID
 import com.potikot.doings.domain.model.Project
+import com.potikot.doings.domain.model.Tag
 import com.potikot.doings.domain.model.TaskId
 import com.potikot.doings.presentation.util.generateMockProject
 import com.potikot.doings.ui.theme.DoingsTheme
@@ -60,6 +61,7 @@ fun ProjectCard(
     onDelete_Column: (ColumnId) -> Unit,
     onToggleDone_Task: (TaskId, Boolean) -> Unit,
     onOpenOptions_Task: (TaskId) -> Unit,
+    onTagClick_Task: (TaskId, Tag) -> Unit,
 ) {
     val pageCount = project.boards.size
     val currentPage = project.selectedBoardId?.let { project.boards.indexOfFirst { it.id == project.selectedBoardId } } ?: 0
@@ -194,7 +196,8 @@ fun ProjectCard(
                     onOpenOptions_Column = onOpenOptions_Column,
                     onDelete_Column = onDelete_Column,
                     onToggleDone_Task = onToggleDone_Task,
-                    onOpenOptions_Task = onOpenOptions_Task
+                    onOpenOptions_Task = onOpenOptions_Task,
+                    onTagClick_Task = onTagClick_Task
                 )
             }
         }
@@ -210,7 +213,9 @@ private fun BoardListItem(
     val contentColor = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
 
     Box(
-        modifier = modifier.padding(horizontal = 8.dp).padding(top = 8.dp)
+        modifier = modifier
+            .padding(horizontal = 8.dp)
+            .padding(top = 8.dp)
     ) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
@@ -268,6 +273,7 @@ private fun ProjectCardPreview() {
             onDelete_Column = { },
             onToggleDone_Task = { _, _ -> },
             onOpenOptions_Task = { },
+            onTagClick_Task = { _, _ -> }
         )
     }
 }

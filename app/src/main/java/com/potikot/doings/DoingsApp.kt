@@ -2,9 +2,9 @@ package com.potikot.doings
 
 import android.app.Application
 import com.potikot.doings.domain.model.Account
-import com.potikot.doings.domain.model.Project
 import com.potikot.doings.domain.repository.AccountRepository
 import com.potikot.doings.domain.repository.AppDataRepository
+import com.potikot.doings.domain.util.AccountProvider
 import dagger.hilt.android.HiltAndroidApp
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -21,6 +21,7 @@ class DoingsApp : Application() {
 
     override fun onCreate() {
         super.onCreate()
+        appDataRepository.setAccountProvider(AccountProvider.Local)
         initDataStorage()
     }
 
@@ -31,7 +32,7 @@ class DoingsApp : Application() {
 
             val id = accountRepository.insert(Account(name = "Local"))
 
-            appDataRepository.setCurrentAccountId(id)
+            appDataRepository.setAccountId(id)
         }
     }
 }

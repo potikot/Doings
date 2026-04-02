@@ -1,5 +1,6 @@
 package com.potikot.doings.data.data_source.repository
 
+import android.util.Log
 import com.potikot.doings.data.data_source.dao.AccountDao
 import com.potikot.doings.data.data_source.dao.ProjectDao
 import com.potikot.doings.data.data_source.mappers.toDomain
@@ -43,6 +44,17 @@ class AccountRepositoryImpl @Inject constructor(
 
     override fun get(id: AccountId): Flow<Account?> {
         return dao.getById(id.value).map { it?.toDomain() }
+    }
+
+    override fun getByExternalId(id: String): Flow<Account?> {
+        return dao.getByExternalId(id).map {
+            if (it.isEmpty()) return@map null
+            if (it.size > 1) {
+                Log.e("AccountRepositoryImpl", "getByExternalId: Found more than one account with id $id")
+            }
+
+            it.first().toDomain()
+        }
     }
 
     override fun getAll(): Flow<List<Account>> {

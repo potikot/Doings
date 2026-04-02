@@ -10,5 +10,6 @@ data class Account(
     val projects: List<Project> = emptyList(),
     val createdAt: Instant = Instant.now()
 )
+
 @JvmInline
 value class AccountId(override val value: Long): ID

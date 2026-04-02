@@ -46,9 +46,7 @@ fun DoingsTheme(
     val isThemeDark = theme == Theme.Dark || (theme == Theme.System && isSystemInDarkTheme())
     val colorScheme = when {
         dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
-            // Log.d(null, "dynamic color scheme")
             val context = LocalContext.current
-
             if (isThemeDark) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
         }
 

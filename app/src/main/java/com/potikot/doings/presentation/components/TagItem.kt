@@ -98,7 +98,6 @@ private fun getChipContent(tag: Tag): ChipContent {
                 label = {
                     Text(
                         text = tag.level.toString(),
-                        color = if (tag.level > PriorityLevel.LOW) getPriorityColor(tag.level) else Color.Unspecified,
                         style = MaterialTheme.typography.labelSmall
                     )
                 },
@@ -108,7 +107,7 @@ private fun getChipContent(tag: Tag): ChipContent {
                         imageVector = icon,
                         contentDescription = null,
                         modifier = Modifier.size(20.dp),
-                        tint = if (tag.level > PriorityLevel.LOW) getPriorityColor(tag.level) else Color.Unspecified
+                        tint = getPriorityColor(tag.level)
                     )
                 }
             )
@@ -131,40 +130,6 @@ private fun getChipContent(tag: Tag): ChipContent {
                 }
             )
         }
-//        is Tag.Reminder -> {
-//            ChipContent(
-//                label = {
-//                    Text(
-//                        text = tag.date?.format(dateFormatter) ?: "no",
-//                        style = MaterialTheme.typography.labelSmall
-//                    )
-//                },
-//                leadingIcon = {
-//                    Icon(
-//                        imageVector = getTagIcon(tag),
-//                        contentDescription = null,
-//                        modifier = Modifier.size(20.dp)
-//                    )
-//                }
-//            )
-//        }
-//        is Tag.Timer -> {
-//            ChipContent(
-//                label = {
-//                    Text(
-//                        text = tag.remaining?.toString() ?: "no",
-//                        style = MaterialTheme.typography.labelSmall
-//                    )
-//                },
-//                leadingIcon = {
-//                    Icon(
-//                        imageVector = getTagIcon(tag),
-//                        contentDescription = null,
-//                        modifier = Modifier.size(20.dp)
-//                    )
-//                }
-//            )
-//        }
     }
 }
 
@@ -173,8 +138,6 @@ private fun getTagIcon(tag: Tag): ImageVector? {
     return when(tag) {
         is Tag.Deadline -> Icons.Outlined.DateRange
         is Tag.Priority -> ImageVector.vectorResource(id = R.drawable.ic_priority_24)
-//        is Tag.Reminder -> ImageVector.vectorResource(id = R.drawable.ic_reminder_v2)
-//        is Tag.Timer -> ImageVector.vectorResource(id = R.drawable.ic_timer)
         is Tag.Custom -> null
     }
 }

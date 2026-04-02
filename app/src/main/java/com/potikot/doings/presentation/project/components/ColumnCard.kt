@@ -29,6 +29,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.potikot.doings.domain.model.Column
 import com.potikot.doings.domain.model.ColumnId
+import com.potikot.doings.domain.model.Tag
 import com.potikot.doings.domain.model.TaskId
 import com.potikot.doings.presentation.util.generateMockColumn
 import com.potikot.doings.ui.theme.DoingsTheme
@@ -41,7 +42,8 @@ fun ColumnCard(
     onOpenOptions: (ColumnId) -> Unit,
     onDelete: (ColumnId) -> Unit, // not used because implemented in options
     onToggleDone_Task: (TaskId, Boolean) -> Unit,
-    onOpenOptions_Task: (TaskId) -> Unit
+    onOpenOptions_Task: (TaskId) -> Unit,
+    onTagClick_Task: (TaskId, Tag) -> Unit
 ) {
     val containerColor = MaterialTheme.colorScheme.surface
     val cardShape = MaterialTheme.shapes.large
@@ -113,7 +115,8 @@ fun ColumnCard(
                     task = task,
                     modifier = Modifier.padding(horizontal = 8.dp),
                     onToggleCompleted = { onToggleDone_Task(task.id, it) },
-                    onOpenOptions = { onOpenOptions_Task(task.id) }
+                    onOpenOptions = { onOpenOptions_Task(task.id) },
+                    onTagClick = { tag -> onTagClick_Task(task.id, tag) }
                 )
                 Spacer(modifier = Modifier.height(8.dp))
             }
@@ -135,7 +138,8 @@ fun ColumnCardPreview() {
             onOpenOptions = { },
             onDelete = { },
             onToggleDone_Task = { _, _ -> },
-            onOpenOptions_Task = { }
+            onOpenOptions_Task = { },
+            onTagClick_Task = { _, _ -> }
         )
     }
 }

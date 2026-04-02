@@ -33,6 +33,10 @@ class GetAccountUseCase(private val repository: AccountRepository) {
     operator fun invoke(id: AccountId) = repository.get(id)
 }
 
+class GetExternalAccountUseCase(private val repository: AccountRepository) {
+    operator fun invoke(id: String) = repository.getByExternalId(id)
+}
+
 class GetAccountsUseCase(private val repository: AccountRepository) {
     operator fun invoke() = repository.getAll()
 }

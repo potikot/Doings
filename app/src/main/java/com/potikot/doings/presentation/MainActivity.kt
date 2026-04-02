@@ -11,6 +11,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import com.potikot.doings.presentation.login.LoginScreen
 import com.potikot.doings.presentation.main.MainScreen
 import com.potikot.doings.presentation.project.ProjectScreen
 import com.potikot.doings.presentation.util.Screen
@@ -33,6 +34,11 @@ class MainActivity : ComponentActivity() {
                         startDestination = Screen.Main.route
                     ) {
                         composable(
+                            route = Screen.Login.route
+                        ) {
+                            LoginScreen(navController)
+                        }
+                        composable(
                             route = Screen.Main.route
                         ) {
                             MainScreen(navController)
@@ -43,7 +49,7 @@ class MainActivity : ComponentActivity() {
                                 type = NavType.LongType
                             })
                         ) {
-                            ProjectScreen(navController = navController)
+                            ProjectScreen(navController)
                         }
                     }
                 }
